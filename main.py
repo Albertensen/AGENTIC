@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# Load environment variables (none needed for local Ollama)
 load_dotenv()
 
 # CrewAI imports
@@ -10,6 +10,12 @@ from crewai import Agent, Task, Crew, Process
 # Import the custom Chrome bridge tool
 from custom_tools import GeminiChromeBridgeTool
 
+# Import Ollama LLM from LangChain community
+from langchain_community.llms import Ollama
+
+# Initialize Ollama LLM (local, no API key needed)
+llm = Ollama(model="deepseek-v4-flash")
+
 # ----------------------------------------------------------------------
 # Agent Definitions
 # ----------------------------------------------------------------------
@@ -17,9 +23,10 @@ from custom_tools import GeminiChromeBridgeTool
 # Senior Multimodal Niche Researcher
 researcher = Agent(
     role="Senior Multimodal Niche Researcher",
-    goal="Menghasilkan outline ebook komprehensif, data tren pasar terbaru, dan aset gambar/prompt visual via Gemini.",
+    goal="Menghasilkan outline ebook komprehensif, data tren pasar terbaru, dan aset gambar/prompt visual via LLM",
     backstory="Kamu adalah analis tren dan prompt engineer veteran. Kamu mencari topik viral dan merangkai data mentah menjadi outline terstruktur dengan aset visual.",
     tools=[GeminiChromeBridgeTool()],
+    llm=llm,
     verbose=True
 )
 
@@ -28,6 +35,7 @@ writer = Agent(
     role="Lead Ebook Copywriter & Layout Architect",
     goal="Mengubah outline dan aset gambar menjadi naskah ebook format Markdown yang persuasif (target 15 halaman) dan siap jual.",
     backstory="Kamu penulis kelas atas bergaya kasual, interaktif, dan kekinian. Kamu ahli meletakkan gambar (format Markdown) di tempat yang tepat agar pembaca tidak bosan.",
+    llm=llm,
     verbose=True
 )
 
@@ -36,6 +44,7 @@ qc_editor = Agent(
     role="Quality Assurance & UX Editor",
     goal="Memastikan draf Markdown sempurna secara ejaan, grammar, dan estetika penempatan visual/teks.",
     backstory="Kamu editor perfeksionis yang memastikan tidak ada typo, kalimat kaku, atau tata letak berantakan. Standarmu adalah produk premium.",
+    llm=llm,
     verbose=True
 )
 
