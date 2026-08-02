@@ -3,7 +3,7 @@ import sys
 import re
 from pathlib import Path
 from dotenv import load_dotenv
-from crewai import Agent, Task, Crew, Process
+from crewai import Agent, Task, Crew, Process, LLM
 from image_tools import WikimediaImageSearchTool
 from ebook_saver import save_ebook
 
@@ -12,8 +12,15 @@ project_dir = Path("C:/Users/Administrator/Desktop/CrewAI_Ebook")
 env_path = project_dir / ".env"
 load_dotenv(dotenv_path=str(env_path))
 
-# Model identifier for OpenRouter (string, not instantiated object)
-llm_model = os.getenv("MODEL_NAME")
+# Model identifier untuk OpenRouter — instance LLM dgn max_tokens terbatas
+# (OpenRouter 402: credit tak cukup utk max_tokens default 16384)
+llm_model = LLM(
+    model=os.getenv("MODEL_NAME"),
+    base_url=os.getenv("OPENAI_API_BASE"),
+    api_key=os.getenv("OPENAI_API_KEY"),
+    max_tokens=3000,
+    temperature=0.7,
+)
 
 # ============================================================
 # Konstanta kualitas
@@ -73,7 +80,7 @@ def extract_chapters(outline: str) -> list:
     """Ekstrak judul bab utama dari outline riset.
     Tangkap heading level 2-3 dengan pola 'Bab N' / 'Chapter N', ATAU level 2 biasa.
     Sub-bab numerik (1.1, 2.3) dan bab penutup (kesimpulan/daftar isi) diabaikan."""
-    STOPWORDS = ("kesimpulan", "daftar isi", "daftar pustaka", "pendahuluan", "referensi", "draft", "outline", "dokumen kerangka", "penutup", "kata pengantar")
+    STOPWORDS = ("kesimpulan", "daftar isi", "daftar pustaka", "referensi", "draft", "outline", "dokumen kerangka", "penutup", "kata pengantar")
     chapters = []
     for line in outline.splitlines():
         line = line.strip()
@@ -236,37 +243,50 @@ if __name__ == "__main__":
     print(f"\n=== DRAF GABUNGAN: kata={words} placeholder={ph} ===")
 
     # ---- Fase 3: QC + feedback loop ----
-    feedback = ""
-    for attempt in range(1, MAX_REVISION_ROUNDS + 1):
-        print(f"\n{'='*60}\nQC PUTARAN {attempt}/{MAX_REVISION_ROUNDS}\n{'='*60}")
-        crew_qc = Crew(
-            agents=[qc_editor],
-            tasks=[qc_task()],
-            process=Process.sequential,
-            verbose=True
-        )
-        result = crew_qc.kickoff(inputs={'topic': topic, 'draft': full_draft})
-        full_draft = str(result)
-        words, ph = quality_report(full_draft)
-        print(f"[QC-CHECK] putaran={attempt} kata={words} placeholder={ph}")
-
-        if words >= MIN_TOTAL_WORDS and not ph:
-            print("[QC-CHECK] LOLOS.")
-            break
-
-        issues = []
-        if words < MIN_TOTAL_WORDS:
-            issues.append(
-                f"Panjang naskah baru {words} kata, target minimal {MIN_TOTAL_WORDS} kata. "
-                "Perluas setiap bab dan sub-bab dengan penjelasan mendalam, contoh, tabel, dan tips praktis."
+    # Cek kualitas dulu; QC hanya dipanggil jika draf BELUM lolos (hindari QC memangkas draf bagus)
+    words, ph = quality_report(full_draft)
+    if words >= MIN_TOTAL_WORDS and not ph:
+        print(f"[QC-CHECK] Draf langsung lolos: kata={words} placeholder={ph}")
+    else:
+        feedback = ""
+        for attempt in range(1, MAX_REVISION_ROUNDS + 1):
+            print(f"\n{'='*60}\nQC PUTARAN {attempt}/{MAX_REVISION_ROUNDS}\n{'='*60}")
+            crew_qc = Crew(
+                agents=[qc_editor],
+                tasks=[qc_task()],
+                process=Process.sequential,
+                verbose=True
             )
-        if ph:
-            issues.append(
-                "Masih ada placeholder gambar. WAJIB ganti semua dengan URL nyata "
-                "dari tool wikimedia_image_search_tool (upload.wikimedia.org)."
-            )
-        feedback = "\n".join(f"- {i}" for i in issues)
-        print(f"[QC-CHECK] Belum lolos. Feedback:\n{feedback}")
+            result = crew_qc.kickoff(inputs={'topic': topic, 'draft': full_draft})
+            qc_out = str(result)
+            w_qc, ph_qc = quality_report(qc_out)
+            w_old, _ = quality_report(full_draft)
+            # Jaga-jaga: QC kadang memangkas draf (output lebih pendek). Jangan biarkan
+            # draf mengecil — pertahankan yang lebih panjang.
+            if w_qc >= w_old:
+                full_draft = qc_out
+            else:
+                print(f"[QC-CHECK] QC memangkas ({w_old}->{w_qc} kata), pertahankan draf asli.")
+            words, ph = quality_report(full_draft)
+            print(f"[QC-CHECK] putaran={attempt} kata={words} placeholder={ph}")
+
+            if words >= MIN_TOTAL_WORDS and not ph:
+                print("[QC-CHECK] LOLOS.")
+                break
+
+            issues = []
+            if words < MIN_TOTAL_WORDS:
+                issues.append(
+                    f"Panjang naskah baru {words} kata, target minimal {MIN_TOTAL_WORDS} kata. "
+                    "Perluas setiap bab dan sub-bab dengan penjelasan mendalam, contoh, tabel, dan tips praktis."
+                )
+            if ph:
+                issues.append(
+                    "Masih ada placeholder gambar. WAJIB ganti semua dengan URL nyata "
+                    "dari tool wikimedia_image_search_tool (upload.wikimedia.org)."
+                )
+            feedback = "\n".join(f"- {i}" for i in issues)
+            print(f"[QC-CHECK] Belum lolos. Feedback:\n{feedback}")
 
     # ---- Fase 4: Simpan + konversi ----
     words, ph = quality_report(full_draft)

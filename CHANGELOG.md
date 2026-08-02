@@ -7,6 +7,14 @@ Jenis: `feat` (fitur baru), `fix` (perbaikan), `refactor` (ubah struktur tanpa u
 
 ---
 
+## [2026-08-02] fix — QC jangan pangkas draf, max_tokens hemat credit, pendahuluan lolos filter
+- File: `main.py`
+- **QC hanya dipanggil jika draf belum lolos** (cek kualitas sebelum panggil QC) — sebelumnya QC selalu dipanggil dan memangkas draf 2883→1736 kata. Sekarang draf bagus langsung lolos.
+- **Anti-pangkas**: jika output QC lebih pendek dari draf, pertahankan draf asli (hanya ambil feedback).
+- **max_tokens 3000** (OpenRouter 402: credit tak cukup untuk default 16384 / 8000) — hemat saldo, output bab ~700 kata tetap cukup.
+- **"Pendahuluan" dihapus dari stopwords** `extract_chapters` — Bab 1 Pendahuluan berisi konten penting, jangan difilter.
+- Hasil uji (Jenis-Jenis Pals): 11 bab, 6.670 kata, 11 gambar lokal (5 unik), PDF 44 halaman 255 KB (22 objek ImageC/B ter-embed), EPUB, 0 placeholder → lolos QC tanpa dipangkas.
+
 ## [2026-08-02] feat — gambar lokal terunduh (PDF render), retry backoff, CLI topik
 - File: `ebook_saver.py`, `pdf_epub_converter.py`, `main.py`
 - **PDF/EPUB sekarang render gambar**: `download_images()` unduh semua URL Wikimedia ke folder `_assets/`, refer path lokal (sebelumnya URL remote tak di-render typst → PDF tanpa gambar). Konverter pakai `--resource-path` + `cwd=output_dir`.
