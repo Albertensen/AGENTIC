@@ -10,7 +10,7 @@ Jenis: `feat` (fitur baru), `fix` (perbaikan), `refactor` (ubah struktur tanpa u
 ## [2026-08-02] feat — feedback loop QC→Writer, penulisan per bab, tool gambar Wikimedia
 - File: `main.py`, `image_tools.py` (baru), `AGENTS.md`
 - **Komunikasi 2 arah**: `Process.hierarchical` + manager_agent dicoba → gagal (gpt-3.5/4o-mini manager tidak meneruskan hasil antar agent, output kosong/loop delegasi). Ganti ke **sequential + feedback loop eksplisit**: QC editor menilai draf, jika < MIN_TOTAL_WORDS atau ada placeholder → kirim catatan revisi ke Writer, ulang maks MAX_REVISION_ROUNDS.
-- **Target panjang**: penulisan dipecah PER BAB (`chapter_write_task`), tiap bab target 700+ kata → total 4.000+ kata. `extract_chapters()` ekstrak judul bab dari outline (level ## / ### Bab N, filter kesimpulan/daftar isi/sub-bab numerik).
+- **Target panjang**: penulisan dipecah PER BAB (`chapter_write_task`), tiap bab target 700+ kata → total 4.000+ kata. `extract_chapters()` ekstrak judul bab dari outline (level ## / ### Bab N, filter kesimpulan/daftar isi/daftar pustaka/sub-bab numerik).
 - **Gambar nyata**: `WikimediaImageSearchTool` baru (Commons API gratis, tanpa key) — multi-query fallback, filter relevansi kata kunci di judul, delay anti-rate-limit. Whitelist URL `upload.wikimedia.org` di `has_placeholder()` (anti-halusinasi URL unsplash/pixabay).
 - **Model**: `openai/gpt-4o-mini` via OpenRouter (id `google/*`/`deepseek/*` terdeteksi native provider CrewAI dan bypass OpenRouter; gpt-3.5-turbo output terlalu pendek).
 - Hasil uji Palworld: 7 bab, 4.101 kata, 7 gambar nyata, 0 placeholder, PDF+EPUB tersimpan.

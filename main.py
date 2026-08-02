@@ -71,7 +71,7 @@ def extract_chapters(outline: str) -> list:
     """Ekstrak judul bab utama dari outline riset.
     Tangkap heading level 2-3 dengan pola 'Bab N' / 'Chapter N', ATAU level 2 biasa.
     Sub-bab numerik (1.1, 2.3) dan bab penutup (kesimpulan/daftar isi) diabaikan."""
-    STOPWORDS = ("kesimpulan", "daftar isi", "pendahuluan", "referensi", "draft", "outline", "dokumen kerangka")
+    STOPWORDS = ("kesimpulan", "daftar isi", "daftar pustaka", "pendahuluan", "referensi", "draft", "outline", "dokumen kerangka")
     chapters = []
     for line in outline.splitlines():
         line = line.strip()
