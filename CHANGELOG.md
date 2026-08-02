@@ -7,10 +7,15 @@ Jenis: `feat` (fitur baru), `fix` (perbaikan), `refactor` (ubah struktur tanpa u
 
 ---
 
-## [2026-08-02] feat — auto-save ebook md/pdf/epub ke `Desktop/ebook-crew` setelah crew run
-- File: `main.py`, `pdf_epub_converter.py`, `test_converter.py`
-- Alur: `crew.kickoff()` → hasil final Markdown disimpan otomatis + dikonversi ke PDF & EPUB di folder tujuan.
-- PDF memakai engine Typst (pdflatex/xelatex tidak tersedia di sistem).
+## [2026-08-02] docs — tambah RELEASE_NOTES.md + aturan release notes wajib
+- File: `RELEASE_NOTES.md` (baru), `CONTRIBUTING.md`, `AGENTS.md`
+- Setiap rilis wajib update `RELEASE_NOTES.md` (format `## v<MAJOR>.<MINOR>.<PATCH> — YYYY-MM-DD`) sebelum push.
+- `CONTRIBUTING.md`: section 2 baru (Release Notes), penomoran ulang.
+- `AGENTS.md`: rule utama nomor 2 (release notes), struktur proyek + alur kerja diperbarui.
+
+## [2026-08-02] docs — changelog rule, contributing guide, agent instructions
+- File: `AGENTS.md` (baru), `CONTRIBUTING.md` (baru), `CHANGELOG.md` (baru)
+- Rule wajib: changelog sebelum push, uji sebelum commit, destinasi hasil di `ebook_saver.DEFAULT_OUTPUT_DIR`, engine PDF Typst, model tanpa slash.
 
 ## [2026-08-02] refactor — logika simpan/konversi dipindah ke modul `ebook_saver.py`
 - File: `ebook_saver.py` (baru), `main.py`
