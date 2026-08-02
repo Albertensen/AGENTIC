@@ -4,6 +4,24 @@ Ringkasan rilis per versi. Detail teknis lengkap di `CHANGELOG.md`.
 
 ---
 
+## v1.3.0 — 2026-08-02
+
+**Fitur**
+- **Feedback loop 2 arah**: QC Editor menilai draf, kirim instruksi perbaikan ke Writer jika belum memenuhi standar (panjang + gambar), ulang hingga maks 2 putaran.
+- **Penulisan per bab**: naskah ditulis bab demi bab (target 700+ kata/bab) → total ebook 4.000+ kata (15-25 halaman), bab + sub-bab terstruktur.
+- **Gambar nyata**: tool `WikimediaImageSearchTool` (Commons API gratis) — Writer menyematkan URL gambar asli (upload.wikimedia.org) di tiap bab, bukan placeholder. Validator anti-halusinasi (hanya URL Wikimedia diterima).
+- **Model lebih kuat**: `openai/gpt-4o-mini` via OpenRouter (menggantikan gpt-3.5-turbo yang outputnya terlalu pendek).
+
+**Perbaikan**
+- `Process.hierarchical` dihapus (manager gpt-4o-mini tidak meneruskan hasil antar agent) → sequential + feedback loop eksplisit yang terbukti bekerja.
+- `GeminiChromeBridgeTool` dilepas dari researcher (profil Chrome bermasalah, error WinError 183/profile not found) — riset kini via LLM + tool gambar.
+- Filter relevansi gambar Wikimedia + delay anti-rate-limit (HTTP 429).
+
+**Hasil uji (Palworld)**
+- 7 bab, 4.101 kata, 7 gambar nyata, 0 placeholder → PDF 174 KB + EPUB 20 KB tersimpan otomatis di `ebook-crew`.
+
+---
+
 ## v1.2.0 — 2026-08-02
 
 **Fitur**

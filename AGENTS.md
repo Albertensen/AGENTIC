@@ -11,6 +11,8 @@ Baca SEBELUM mengubah kode.
 4. **Destinasi hasil**: ubah `DEFAULT_OUTPUT_DIR` di `ebook_saver.py`, bukan di `main.py`.
 5. **Engine PDF** = Typst (`--pdf-engine=typst`). Jangan pakai xelatex/pdflatex (tidak terpasang).
 6. **Model LLM**: id tanpa slash (`gemini-3.5-flash-lite`), hindari `gemini-3.6-flash` (429).
+7. **Model OpenRouter via CrewAI**: id `google/*` atau `deepseek/*` → CrewAI deteksi native provider (butuh API key Google/DeepSeek, bypass OpenRouter). Pakai `openai/gpt-4o-mini` (native OpenAI hormati `OPENAI_API_BASE` → OpenRouter) yang terbukti jalan.
+8. **`.env` JANGAN pernah di-commit atau ditimpa** — tidak ada backup git. Simpan key asli di tempat aman (user punya).
 
 ## Struktur Proyek
 
