@@ -104,8 +104,9 @@ def save_ebook(markdown_text, topic, output_dir=None):
     md_path.write_text(markdown_local, encoding="utf-8")
     print(f"[SAVE] Markdown -> {md_path}")
 
-    pdf_path = pdf_epub_converter.markdown_to_pdf(str(md_path), str(out_dir))
-    epub_path = pdf_epub_converter.markdown_to_epub(str(md_path), str(out_dir))
+    # resource-path = folder assets agar pandoc resolve img_XX.jpg (fix gambar tak muncul di PDF)
+    pdf_path = pdf_epub_converter.markdown_to_pdf(str(md_path), str(out_dir), str(assets_dir))
+    epub_path = pdf_epub_converter.markdown_to_epub(str(md_path), str(out_dir), str(assets_dir))
     print(f"[SAVE] PDF -> {pdf_path}")
     print(f"[SAVE] EPUB -> {epub_path}")
     return md_path, pdf_path, epub_path

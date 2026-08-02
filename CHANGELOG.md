@@ -7,6 +7,20 @@ Jenis: `feat` (fitur baru), `fix` (perbaikan), `refactor` (ubah struktur tanpa u
 
 ---
 
+## [2026-08-02] fix — PDF/EPUB kini benar-benar render gambar (resource-path ke folder _assets)
+- File: `pdf_epub_converter.py`, `ebook_saver.py`
+- **Bug kritis**: `markdown_to_pdf`/`markdown_to_epub` set `--resource-path=output_dir` (root), padahal gambar lokal hasil `download_images()` tersimpan di subfolder `_assets/`. Akibatnya pandoc gagal resolve `img_XX.jpg` → "Could not fetch resource: replacing image with description" → **PDF/EPUB tanpa gambar** (0 objek image).
+- **Fix**: `save_ebook` kini lempar `assets_dir` sebagai `resource_path` ke converter; converter set `--resource-path=<assets_dir>`. Gambar lokal langsung ter-resolve & ter-embed.
+- Hasil verifikasi (Jenis-Jenis Pals): PDF baru 31 halaman, **17 gambar ter-embed** (sebelumnya 0), EPUB ikut ter-embed. `get_images()` per halaman match jumlah assets.
+- Backward-compat: param `resource_path=None` default = `output_dir` (perilaku lama bila dipanggil tanpa arg).
+
+## [2026-08-02] fix — model via 9Router + retry anti-crash model kosong + anti rate-limit Wikimedia
+- File: `main.py`, `image_tools.py`, `.env` (tak di-commit)
+- **Model**: OpenRouter 402 (credit habis) → ganti ke **9Router lokal** (`http://localhost:20128/v1`, model `COMBO-UTAMA`). `.env` asli di-backup ke `.env.bak_openrouter`.
+- **Retry bab**: `kickoff` per bab dibungkus retry 4x (delay 8s) — berhenti crash "Invalid response from LLM call - None or empty" saat 9Router routing ke model yang balas kosong.
+- **Anti rate-limit**: delay antar query Wikimedia `image_tools.py` naik 0.5s→3s, jeda saat 429 2s→5s (kurangi "ERROR: HTTP 429 Too Many Requests").
+- Hasil uji (Jenis-JP): 9 bab, 6.910 kata, 17 gambar lokal, lolos QC tanpa dipangkas, EXIT=0.
+
 ## [2026-08-02] fix — QC jangan pangkas draf, max_tokens hemat credit, pendahuluan lolos filter
 - File: `main.py`
 - **QC hanya dipanggil jika draf belum lolos** (cek kualitas sebelum panggil QC) — sebelumnya QC selalu dipanggil dan memangkas draf 2883→1736 kata. Sekarang draf bagus langsung lolos.

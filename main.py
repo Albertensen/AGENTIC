@@ -233,7 +233,19 @@ if __name__ == "__main__":
             process=Process.sequential,
             verbose=True
         )
-        ch_result = crew_ch.kickoff(inputs={'topic': topic, 'outline': str(outline)})
+        ch_result = None
+        for attempt_retry in range(1, 5):  # retry model kosong/turun
+            try:
+                ch_result = crew_ch.kickoff(inputs={'topic': topic, 'outline': str(outline)})
+                if ch_result is None or not str(ch_result).strip():
+                    raise ValueError("empty")
+                break
+            except Exception as e:
+                print(f"  [RETRY] bab {i} attempt={attempt_retry}/4 gagal: {e}")
+                if attempt_retry == 4:
+                    raise
+                import time as _t
+                _t.sleep(8)
         all_chapters_md.append(f"## {ch}\n\n{str(ch_result).strip()}")
         w, ph = quality_report(str(ch_result))
         print(f"  [BAB] kata={w} placeholder={ph}")

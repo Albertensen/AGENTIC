@@ -111,9 +111,9 @@ class WikimediaImageSearchTool(BaseTool):
                     last_error = f"Error query '{v}': {e}"
                     if "429" in str(e):
                         # rate limited — tunggu lalu lanjut ke variasi berikutnya
-                        time.sleep(2)
+                        time.sleep(5)
                         continue
-                time.sleep(0.5)
+                time.sleep(3)  # jeda antar query anti-rate-limit (Wikimedia ketat)
             return f"ERROR: Gagal menemukan gambar untuk '{query}' (dicoba: {', '.join(variants)}). {last_error}"
         except Exception as e:
             return f"ERROR: Gagal mencari gambar Wikimedia: {e}"

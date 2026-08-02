@@ -4,6 +4,14 @@ Ringkasan rilis per versi. Detail teknis lengkap di `CHANGELOG.md`.
 
 ---
 
+## v1.5.0 — 2026-08-02
+
+**Perbaikan kritis**
+- **Gambar kini benar-benar tampil di PDF/EPUB**: sebelumnya `--resource-path` menunjuk root folder padahal gambar lokal di subfolder `_assets/` → pandoc gagal resolve → PDF tanpa gambar (0 embed). Kini resource-path diarahkan ke folder `_assets/` → 17 gambar ter-embed di PDF 31 halaman (uji: Jenis-Jenis Pals).
+- **Model via 9Router lokal**: OpenRouter kehabisan credit (402) → ganti ke 9Router (`COMBO-UTAMA`, gratis). `.env` asli di-backup.
+- **Anti-crash**: retry 4x per bab saat model balas kosong ("Invalid response") — tak ada lagi kegagalan diam-diam di tengah penulisan.
+- **Anti rate-limit Wikimedia**: jeda antar query dinaikkan (0.5s→3s, saat 429 →5s).
+
 ## v1.4.0 — 2026-08-02
 
 **Fitur**
