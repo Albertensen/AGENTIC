@@ -1,20 +1,14 @@
 import os
-import re
-from datetime import datetime
 from pathlib import Path
 from dotenv import load_dotenv
 from crewai import Agent, Task, Crew, Process
 from custom_tools import GeminiChromeBridgeTool
-import pdf_epub_converter
+from ebook_saver import save_ebook
 
 # Load environment variables from .env file in the project directory
 project_dir = Path("C:/Users/Administrator/Desktop/CrewAI_Ebook")
 env_path = project_dir / ".env"
 load_dotenv(dotenv_path=str(env_path))
-
-# Output folder: every ebook lands here (md + pdf + epub)
-OUTPUT_DIR = Path("C:/Users/Administrator/Desktop/ebook-crew")
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Model identifier for OpenRouter (string, not instantiated object)
 llm_model = os.getenv("MODEL_NAME")  # Should be "openai/gpt-3.5-turbo"
@@ -66,28 +60,6 @@ def qc_task():
         expected_output="Final Ebook Markdown siap kemas",
         agent=qc_editor
     )
-
-
-def slugify(text, max_len=60):
-    """Convert topic text to safe filename slug."""
-    slug = re.sub(r"[^\w\s-]", "", text, flags=re.UNICODE)
-    slug = re.sub(r"[\s_]+", "_", slug).strip("-_")
-    return slug[:max_len] or "ebook"
-
-
-def save_ebook(markdown_text, topic):
-    """Save final markdown to ebook-crew and convert to PDF + EPUB."""
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    base_name = f"{slugify(topic)}_{timestamp}"
-    md_path = OUTPUT_DIR / f"{base_name}.md"
-    md_path.write_text(markdown_text, encoding="utf-8")
-    print(f"\n[SAVE] Markdown -> {md_path}")
-
-    pdf_path = pdf_epub_converter.markdown_to_pdf(str(md_path), str(OUTPUT_DIR))
-    epub_path = pdf_epub_converter.markdown_to_epub(str(md_path), str(OUTPUT_DIR))
-    print(f"[SAVE] PDF -> {pdf_path}")
-    print(f"[SAVE] EPUB -> {epub_path}")
-    return md_path, pdf_path, epub_path
 
 
 # Main Execution
