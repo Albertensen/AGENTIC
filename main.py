@@ -1,4 +1,5 @@
 import os
+import sys
 import re
 from pathlib import Path
 from dotenv import load_dotenv
@@ -24,7 +25,7 @@ MAX_REVISION_ROUNDS = 1         # 1 putaran QC (QC hanya koreksi, jangan potong)
 
 PLACEHOLDER_MARKERS = [
     "url_gambar", "](url", "gambar akan", "gambar disini",
-    "image will", "insert image", "placeholder gambar",
+    "image will", "insert image", "placeholder gambar", "gambar belum",
 ]
 
 # Pattern gambar markdown: ![alt](url)
@@ -37,11 +38,12 @@ TRUSTED_IMG_DOMAINS = ("upload.wikimedia.org",)
 
 
 def is_real_image_url(url: str) -> bool:
-    """URL gambar nyata = berasal dari domain tool pencarian (Wikimedia).
+    """URL gambar nyata = berasal dari domain tool (Wikimedia) ATAU file lokal (img_*.jpg).
     URL lain (unsplash.com/photos/..., example.com/...) dianggap placeholder/halusinasi."""
     low = url.strip().lower()
     if not low.startswith("http"):
-        return False
+        # path lokal hasil download_images (img_01.jpg)
+        return bool(re.match(r"^img_\d+\.(?:jpg|jpeg|png|gif|webp)$", low))
     return any(d in low for d in TRUSTED_IMG_DOMAINS)
 
 
@@ -71,12 +73,12 @@ def extract_chapters(outline: str) -> list:
     """Ekstrak judul bab utama dari outline riset.
     Tangkap heading level 2-3 dengan pola 'Bab N' / 'Chapter N', ATAU level 2 biasa.
     Sub-bab numerik (1.1, 2.3) dan bab penutup (kesimpulan/daftar isi) diabaikan."""
-    STOPWORDS = ("kesimpulan", "daftar isi", "daftar pustaka", "pendahuluan", "referensi", "draft", "outline", "dokumen kerangka")
+    STOPWORDS = ("kesimpulan", "daftar isi", "daftar pustaka", "pendahuluan", "referensi", "draft", "outline", "dokumen kerangka", "penutup", "kata pengantar")
     chapters = []
     for line in outline.splitlines():
         line = line.strip()
-        # heading markdown: ## ... atau ### ...
-        m = re.match(r"^#{2,3}\s+(.+)", line)
+        # heading markdown: ## / ### / ####
+        m = re.match(r"^#{2,4}\s+(.+)", line)
         if m:
             title = m.group(1).strip()
             title = re.sub(r"[*_`]", "", title).strip()
@@ -87,6 +89,13 @@ def extract_chapters(outline: str) -> list:
             if is_bab or (line.startswith("## ") and not is_sub and not re.match(r"^\d", title)):
                 if not any(w in low for w in STOPWORDS):
                     chapters.append(title)
+            continue
+        # daftar isi: "1. **Pengantar**" / "2. **Dasar-Dasar**" (tanpa heading)
+        m_toc = re.match(r"^(\d+)\.\s+\*{0,2}(.+?)\*{0,2}\s*$", line)
+        if m_toc:
+            title = m_toc.group(2).strip()
+            if not any(w in title.lower() for w in STOPWORDS):
+                chapters.append(title)
             continue
         # pola teks: Bab 1: ... / BAB 1: ... (tanpa markdown)
         if re.match(r"^(?:Bab|BAB|Chapter)\s+\d+[.:]?\s+\S", line, re.I):
@@ -150,9 +159,11 @@ def chapter_write_task(chapter_title: str, outline: str, feedback: str = ""):
         f"- Bahasa Indonesia baku (KBBI), gaya kasual-interaktif.\n"
         f"GAMBAR:\n"
         f"- Panggil tool 'wikimedia_image_search_tool' dengan kata kunci relevan bab ini "
-        f"(mis. '{chapter_title.lower()}', 'palworld', 'gameplay', 'video game').\n"
-        f"- Sematkan MINIMAL 1 gambar NYATA (URL dari hasil tool, domain upload.wikimedia.org) "
-        f"dengan format ![Keterangan](URL).\n"
+        f"(mis. '{chapter_title.lower()}', 'indonesian food', 'traditional recipe').\n"
+        f"- Ambil URL gambar dari HASIL tool — SALIN PERSIS URL lengkap yang dikembalikan tool "
+        f"(contoh format: https://upload.wikimedia.org/wikipedia/commons/thumb/.../960px-....jpg).\n"
+        f"- JANGAN PERNAH membuat/menebak URL sendiri — URL yang kamu tulis harus KOPI dari output tool.\n"
+        f"- Sematkan MINIMAL 1 gambar NYATA dengan format ![Keterangan](URL).\n"
         f"- JANGAN PERNAH menulis placeholder seperti url_gambar, [Gambar:, atau URL non-Wikimedia."
     )
     if feedback:
@@ -186,7 +197,7 @@ def qc_task():
 
 # Main Execution
 if __name__ == "__main__":
-    topic = "Game Palworld: Panduan Lengkap Tips dan Trik untuk Pemula"
+    topic = sys.argv[1] if len(sys.argv) > 1 else "Game Palworld: Panduan Lengkap Tips dan Trik untuk Pemula"
 
     # ---- Fase 1: Riset ----
     crew_research = Crew(

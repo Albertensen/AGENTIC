@@ -7,6 +7,15 @@ Jenis: `feat` (fitur baru), `fix` (perbaikan), `refactor` (ubah struktur tanpa u
 
 ---
 
+## [2026-08-02] feat — gambar lokal terunduh (PDF render), retry backoff, CLI topik
+- File: `ebook_saver.py`, `pdf_epub_converter.py`, `main.py`
+- **PDF/EPUB sekarang render gambar**: `download_images()` unduh semua URL Wikimedia ke folder `_assets/`, refer path lokal (sebelumnya URL remote tak di-render typst → PDF tanpa gambar). Konverter pakai `--resource-path` + `cwd=output_dir`.
+- **Fallback `Special:FilePath`**: URL thumbnail writer yang 404 di-rescue ke file asli; jika semua kandidat gagal → komentar HTML (bukan URL mati di ebook).
+- **`extract_chapters`** tangkap format `#### Bab N` + daftar isi numerik (`1. **Judul**`); stopwords + "penutup"/"kata pengantar".
+- **`is_real_image_url`** terima file lokal (`img_N.jpg`) — ebook memakai hasil download.
+- **Topik via CLI**: `python main.py "Topik Baru"` (sebelumnya hardcoded).
+- Hasil uji (Resep Masakan Nusantara): 10 bab, 8.737 kata, 15 gambar lokal, PDF 62 halaman, 0 placeholder → lolos QC.
+
 ## [2026-08-02] feat — feedback loop QC→Writer, penulisan per bab, tool gambar Wikimedia
 - File: `main.py`, `image_tools.py` (baru), `AGENTS.md`
 - **Komunikasi 2 arah**: `Process.hierarchical` + manager_agent dicoba → gagal (gpt-3.5/4o-mini manager tidak meneruskan hasil antar agent, output kosong/loop delegasi). Ganti ke **sequential + feedback loop eksplisit**: QC editor menilai draf, jika < MIN_TOTAL_WORDS atau ada placeholder → kirim catatan revisi ke Writer, ulang maks MAX_REVISION_ROUNDS.

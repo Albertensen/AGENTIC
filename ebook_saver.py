@@ -7,6 +7,8 @@ untuk memindahkan folder tujuan tanpa menyentuh main.py.
 
 import os
 import re
+import time
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -23,6 +25,57 @@ def slugify(text, max_len=60):
     slug = re.sub(r"[^\w\s-]", "", text, flags=re.UNICODE)
     slug = re.sub(r"[\s_]+", "_", slug).strip("-_")
     return slug[:max_len] or "ebook"
+
+
+import time
+
+IMG_MD_PATTERN = re.compile(r"!\[([^\]]*)\]\((https?://[^)]+)\)")
+
+
+def download_images(markdown_text, assets_dir):
+    """Unduh semua gambar remote ke folder assets, return markdown dgn path lokal."""
+    os.makedirs(assets_dir, exist_ok=True)
+    counter = [0]
+
+    def _replace(m):
+        alt, url = m.group(1), m.group(2)
+        if "upload.wikimedia.org" not in url:
+            return m.group(0)  # skip non-wikimedia
+        counter[0] += 1
+        ext = ".jpg"
+        for e in (".png", ".gif", ".webp", ".svg", ".jpeg"):
+            if e in url.split("?")[0].lower():
+                ext = e
+                break
+        fname = f"img_{counter[0]:02d}{ext}"
+        dest = assets_dir / fname
+        # jika URL thumbnail 404, coba Special:FilePath (redirect ke file asli)
+        candidates = [url]
+        m_fname = re.search(r"/(?:thumb/)?[^/]+/([^/?#]+\.(?:jpg|jpeg|png|gif|webp|svg))(?:\?|$)", url, re.I)
+        if m_fname:
+            # buang prefix thumbnail "330px-" / "960px-" -> nama file asli
+            raw = m_fname.group(1)
+            real = re.sub(r"^\d+px-", "", raw)
+            candidates.append(
+                "https://commons.wikimedia.org/wiki/Special:FilePath/" + real
+            )
+        for cand in candidates:
+            try:
+                req = urllib.request.Request(
+                    cand, headers={"User-Agent": "CrewAI-Ebook/1.0 (image download)"}
+                )
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    dest.write_bytes(resp.read())
+                time.sleep(3)  # hindari rate limit Wikimedia
+                print(f"[IMG] {fname} ({dest.stat().st_size} bytes)")
+                return f"![{alt}]({fname})"
+            except Exception as e:
+                print(f"[IMG] coba {cand[:60]}... -> {e}")
+        print(f"[IMG] GAGAL {url[:60]}")
+        # URL mati — ganti jadi komentar HTML, bukan biarkan URL rusak di ebook
+        return f"<!-- gambar gagal diunduh: {url[:80]} -->"
+
+    return IMG_MD_PATTERN.sub(_replace, markdown_text)
 
 
 def save_ebook(markdown_text, topic, output_dir=None):
@@ -42,9 +95,13 @@ def save_ebook(markdown_text, topic, output_dir=None):
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     base_name = f"{slugify(topic)}_{timestamp}"
+    assets_dir = out_dir / f"{base_name}_assets"
+
+    # Unduh gambar remote ke lokal agar PDF/EPUB render gambar
+    markdown_local = download_images(markdown_text, assets_dir)
 
     md_path = out_dir / f"{base_name}.md"
-    md_path.write_text(markdown_text, encoding="utf-8")
+    md_path.write_text(markdown_local, encoding="utf-8")
     print(f"[SAVE] Markdown -> {md_path}")
 
     pdf_path = pdf_epub_converter.markdown_to_pdf(str(md_path), str(out_dir))

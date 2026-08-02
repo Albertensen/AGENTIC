@@ -4,6 +4,23 @@ Ringkasan rilis per versi. Detail teknis lengkap di `CHANGELOG.md`.
 
 ---
 
+## v1.4.0 — 2026-08-02
+
+**Fitur**
+- **Gambar benar-benar tampil di PDF/EPUB**: semua gambar Wikimedia diunduh ke folder `_assets/` lokal sebelum konversi (sebelumnya URL remote tak dirender engine typst).
+- **Rescue URL rusak**: URL thumbnail yang salah/halusinasi di-rescue via `Special:FilePath`; yang gagal total diganti komentar, bukan gambar rusak.
+- **Topik fleksibel**: `python main.py "Judul Topik"` — tak perlu edit kode.
+
+**Perbaikan**
+- `extract_chapters` kini tangkap semua format outline (heading `##/###/#### Bab N` + daftar isi numerik).
+- Validator gambar terima file lokal `img_N.jpg` (hasil unduhan).
+- Rate-limit Wikimedia: delay + fallback antrian.
+
+**Hasil uji (Resep Masakan Nusantara)**
+- 10 bab, 8.737 kata, 15 gambar lokal, PDF 62 halaman, EPUB, 0 placeholder → lolos QC, tersimpan otomatis di `ebook-crew`.
+
+---
+
 ## v1.3.0 — 2026-08-02
 
 **Fitur**
