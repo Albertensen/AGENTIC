@@ -44,6 +44,15 @@ def download_images(markdown_text, assets_dir):
     def _copy_local(m):
         alt, fname = m.group(1), m.group(2)
         src = Path(fname)
+        if not src.exists():
+            # reuse markdown: gambar ada di folder *_assets (cwd atau sibling output)
+            search_dirs = [Path.cwd(), assets_dir.parent]
+            for d in search_dirs:
+                for cand in d.glob(f"*_assets/{fname}"):
+                    src = cand
+                    break
+                if src.exists():
+                    break
         if src.exists():
             dest = assets_dir / fname
             if not dest.exists():
