@@ -30,12 +30,27 @@ def slugify(text, max_len=60):
 import time
 
 IMG_MD_PATTERN = re.compile(r"!\[([^\]]*)\]\((https?://[^)]+)\)")
+# pattern utk path gambar lokal yg sudah ada di markdown (mis. img_01.jpg hasil run sblmnya)
+IMG_LOCAL_PATTERN = re.compile(r"!\[([^\]]*)\]\((img_\d+\.(?:jpg|jpeg|png|gif|webp|svg))\)")
 
 
 def download_images(markdown_text, assets_dir):
-    """Unduh semua gambar remote ke folder assets, return markdown dgn path lokal."""
+    """Unduh semua gambar remote ke folder assets, return markdown dgn path lokal.
+    Juga salin path gambar lokal yang sudah ada (img_XX.ext) ke assets_dir agar
+    output self-contained (resource-path konverter = assets_dir)."""
     os.makedirs(assets_dir, exist_ok=True)
     counter = [0]
+
+    def _copy_local(m):
+        alt, fname = m.group(1), m.group(2)
+        src = Path(fname)
+        if src.exists():
+            dest = assets_dir / fname
+            if not dest.exists():
+                dest.write_bytes(src.read_bytes())
+            counter[0] += 1
+            return f"![{alt}]({fname})"
+        return m.group(0)  # biarkan — nanti di-resolve via resource-path
 
     def _replace(m):
         alt, url = m.group(1), m.group(2)
@@ -51,7 +66,7 @@ def download_images(markdown_text, assets_dir):
         dest = assets_dir / fname
         # jika URL thumbnail 404, coba Special:FilePath (redirect ke file asli)
         candidates = [url]
-        m_fname = re.search(r"/(?:thumb/)?[^/]+/([^/?#]+\.(?:jpg|jpeg|png|gif|webp|svg))(?:\?|$)", url, re.I)
+        m_fname = re.search(r"/(?:thumb/)?[^/]+/([^/?#]+\.(?:jpg|jpeg|png|gif|webp|svg))(?:\\?|$)", url, re.I)
         if m_fname:
             # buang prefix thumbnail "330px-" / "960px-" -> nama file asli
             raw = m_fname.group(1)
@@ -75,7 +90,9 @@ def download_images(markdown_text, assets_dir):
         # URL mati — ganti jadi komentar HTML, bukan biarkan URL rusak di ebook
         return f"<!-- gambar gagal diunduh: {url[:80]} -->"
 
-    return IMG_MD_PATTERN.sub(_replace, markdown_text)
+    # 1) salin path lokal yang sudah ada, 2) unduh URL remote
+    out = IMG_LOCAL_PATTERN.sub(_copy_local, markdown_text)
+    return IMG_MD_PATTERN.sub(_replace, out)
 
 
 def save_ebook(markdown_text, topic, output_dir=None):
